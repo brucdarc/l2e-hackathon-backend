@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import database from "./database";
 import {createClient} from "redis";
 
+import { ethers } from 'ethers';
+
 const connectClient = async () => {
   const client = createClient();
 
@@ -63,6 +65,8 @@ routes.post('/play', async (req: Request, res: Response) => {
 
   res.json({message: 'playing successfully initiated'})
 
+  console.log('play ', address)
+
 })
 
 routes.post('/pause', async (req: Request, res: Response) => {
@@ -85,6 +89,8 @@ routes.post('/pause', async (req: Request, res: Response) => {
   )
 
   res.json({message: 'playing successfully stopped'})
+
+  console.log('pause ', address)
 })
 
 routes.post('/claim', async (req: Request, res: Response) => {
@@ -106,5 +112,7 @@ routes.post('/claim', async (req: Request, res: Response) => {
     claimed_time: accumulatedTime
   })
 })
+
+
 
 export default routes;
