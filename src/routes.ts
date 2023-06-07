@@ -83,19 +83,24 @@ routes.post('/claimable', async (req, res) => {
   const client = await connectClient();
   const address = req.body.address
 
-  await client.hSet(address,
-    "playing", "false"
-  )
+  const playing = await client.hGet(address, 'playing');
 
-  const playStartTime = await client.hGet(address, "timestamp")
+  if(playing == 'true') {
 
-  const TotalPlayTime = Date.now() - Number(playStartTime);
+    await client.hSet(address,
+      "playing", "false"
+    )
 
-  //Time values are stored in unix timestamp format, but to the millisecond level
-  //So they have 3 extra decimal places compared to regular unix timestamps
-  await client.hIncrBy(address,
-    "claimable_time", TotalPlayTime
-  )
+    const playStartTime = await client.hGet(address, "timestamp")
+
+    const TotalPlayTime = Date.now() - Number(playStartTime);
+
+    //Time values are stored in unix timestamp format, but to the millisecond level
+    //So they have 3 extra decimal places compared to regular unix timestamps
+    await client.hIncrBy(address,
+      "claimable_time", TotalPlayTime
+    )
+  }
 
   const accumulatedTime = await client.hGet(address, "claimable_time")
 
