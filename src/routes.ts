@@ -16,6 +16,27 @@ const connectClient = async () => {
   return client;
 }
 
+// @ts-ignore
+const accumulateUserTokens = async (client, address : string) => {
+  const playStartTime = await client.hGet(address, "timestamp")
+
+  let TotalPlayTime = Date.now() - Number(playStartTime);
+
+  //Only Allow 10 minutes of earning if there are no interactions
+  //Essentially only allows first 10 minutes of a song to count towards token earnings
+  //Work around for a simplier setup than the client constantly checking in
+  //@TODO make this a heartbeat type of system where the frontend sends heartbeat messages
+  if(TotalPlayTime > 600000) TotalPlayTime = 600000;
+
+  //Time values are stored in unix timestamp format, but to the millisecond level
+  //So they have 3 extra decimal places compared to regular unix timestamps
+  await client.hIncrBy(address,
+    "claimable_time", TotalPlayTime
+  )
+
+  return TotalPlayTime;
+}
+
 const routes = Router();
 
 routes.get('/', (req, res) => {
@@ -64,15 +85,7 @@ routes.post('/pause', async (req: Request, res: Response) => {
     "playing", "false"
   )
 
-  const playStartTime = await client.hGet(address, "timestamp")
-
-  const TotalPlayTime = Date.now() - Number(playStartTime);
-
-  //Time values are stored in unix timestamp format, but to the millisecond level
-  //So they have 3 extra decimal places compared to regular unix timestamps
-  await client.hIncrBy(address,
-    "claimable_time", TotalPlayTime
-  )
+  await accumulateUserTokens(client, address);
 
   res.json({message: 'playing successfully stopped'})
 
@@ -86,20 +99,7 @@ routes.post('/claimable', async (req, res) => {
   const playing = await client.hGet(address, 'playing');
 
   if(playing == 'true') {
-
-    await client.hSet(address,
-      "playing", "false"
-    )
-
-    const playStartTime = await client.hGet(address, "timestamp")
-
-    const TotalPlayTime = Date.now() - Number(playStartTime);
-
-    //Time values are stored in unix timestamp format, but to the millisecond level
-    //So they have 3 extra decimal places compared to regular unix timestamps
-    await client.hIncrBy(address,
-      "claimable_time", TotalPlayTime
-    )
+    await accumulateUserTokens(client, address);
   }
 
   const accumulatedTime = await client.hGet(address, "claimable_time")
@@ -114,6 +114,15 @@ routes.post('/claimable', async (req, res) => {
 routes.post('/claim', async (req: Request, res: Response) => {
   const client = await connectClient();
   const address = req.body.address
+
+  const playing = await client.hGet(address, 'playing');
+
+  if(playing == 'true') {
+    await accumulateUserTokens(client, address);
+    await client.hSet(address,
+      "playing", "false"
+    )
+  }
 
   const accumulatedTime = await client.hGet(address, "claimable_time")
 
