@@ -18,23 +18,25 @@ const connectClient = async () => {
 
 // @ts-ignore
 const accumulateUserTokens = async (client, address : string) => {
-  const playStartTime = await client.hGet(address, "timestamp")
+  const playing = await client.hGet(address, 'playing');
 
-  let TotalPlayTime = Date.now() - Number(playStartTime);
+  if(playing == 'true') {
+    const playStartTime = await client.hGet(address, "timestamp")
 
-  //Only Allow 10 minutes of earning if there are no interactions
-  //Essentially only allows first 10 minutes of a song to count towards token earnings
-  //Work around for a simplier setup than the client constantly checking in
-  //@TODO make this a heartbeat type of system where the frontend sends heartbeat messages
-  if(TotalPlayTime > 600000) TotalPlayTime = 600000;
+    let TotalPlayTime = Date.now() - Number(playStartTime);
 
-  //Time values are stored in unix timestamp format, but to the millisecond level
-  //So they have 3 extra decimal places compared to regular unix timestamps
-  await client.hIncrBy(address,
-    "claimable_time", TotalPlayTime
-  )
+    //Only Allow 10 minutes of earning if there are no interactions
+    //Essentially only allows first 10 minutes of a song to count towards token earnings
+    //Work around for a simplier setup than the client constantly checking in
+    //@TODO make this a heartbeat type of system where the frontend sends heartbeat messages
+    if (TotalPlayTime > 600000) TotalPlayTime = 600000;
 
-  return TotalPlayTime;
+    //Time values are stored in unix timestamp format, but to the millisecond level
+    //So they have 3 extra decimal places compared to regular unix timestamps
+    await client.hIncrBy(address,
+      "claimable_time", TotalPlayTime
+    )
+  }
 }
 
 const routes = Router();
@@ -62,6 +64,8 @@ routes.post('/play', async (req: Request, res: Response) => {
 
   const address = req.body.address
 
+  await accumulateUserTokens(client, address);
+
   await client.hSet(address,
     "playing", "true"
   )
@@ -81,11 +85,11 @@ routes.post('/pause', async (req: Request, res: Response) => {
 
   const address = req.body.address
 
+  await accumulateUserTokens(client, address);
+
   await client.hSet(address,
     "playing", "false"
   )
-
-  await accumulateUserTokens(client, address);
 
   res.json({message: 'playing successfully stopped'})
 
@@ -96,11 +100,7 @@ routes.post('/claimable', async (req, res) => {
   const client = await connectClient();
   const address = req.body.address
 
-  const playing = await client.hGet(address, 'playing');
-
-  if(playing == 'true') {
-    await accumulateUserTokens(client, address);
-  }
+  await accumulateUserTokens(client, address);
 
   const accumulatedTime = await client.hGet(address, "claimable_time")
 
@@ -115,14 +115,11 @@ routes.post('/claim', async (req: Request, res: Response) => {
   const client = await connectClient();
   const address = req.body.address
 
-  const playing = await client.hGet(address, 'playing');
+  await accumulateUserTokens(client, address);
 
-  if(playing == 'true') {
-    await accumulateUserTokens(client, address);
-    await client.hSet(address,
-      "playing", "false"
-    )
-  }
+  await client.hSet(address,
+    "playing", "false"
+  )
 
   const accumulatedTime = await client.hGet(address, "claimable_time")
 
