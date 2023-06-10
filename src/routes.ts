@@ -7,14 +7,26 @@ import {signClaim} from './masterWallet';
 import {ethers, toNumber} from 'ethers';
 
 const connectClient = async () => {
-  const client = createClient();
+  if (!client) {
 
-  client.on('error', err => console.log('Redis Client Error', err));
+    client = createClient({
+      password: '7M3iyscYKXOZbz3L8MzT5f8i4hIjslQU',
+      socket: {
+        host: 'redis-14629.c92.us-east-1-3.ec2.cloud.redislabs.com',
+        port: 14629
+      }
+    });
 
-  await client.connect();
+    // @ts-ignore
+    client.on('error', err => console.log('Redis Client Error', err));
+
+    await client.connect();
+  }
 
   return client;
 }
+
+var client : any;
 
 // @ts-ignore
 const accumulateUserTokens = async (client, address : string) => {

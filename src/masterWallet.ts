@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 const rpc_url = 'WALLET_SECRET_KEY'
 
 //0x24f597d211E487814fAA990dcD4699dB678Fb011
+//@TODO Find better place a new key for this
 const WALLET_SECRET_KEY = '2e0232d624a8935256dae02ce72e7551fa05fd84c385285d641c19e669e08c5f'
 
 
