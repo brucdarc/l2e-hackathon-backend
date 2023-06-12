@@ -7,11 +7,6 @@ app.get( "/", ( req: Request, res : Response ) => {
     res.send( "Hello world!" );
 } );
 
-app.get('/balls', (req: Request, res: Response) => {
-    console.log(req)
-    res.send("Beanus Penus");
-});
-
 // start the Express server
 app.listen( port, () => {
     console.log( `server started at http://localhost:${ port }` );

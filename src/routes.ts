@@ -35,6 +35,8 @@ const accumulateUserTokens = async (client, address : string) => {
   if(playing == 'true') {
     const playStartTime = await client.hGet(address, "timestamp")
 
+    await client.hSet(address, "timestamp", Date.now());
+
     let TotalPlayTime = Date.now() - Number(playStartTime);
 
     //Only Allow 10 minutes of earning if there are no interactions
